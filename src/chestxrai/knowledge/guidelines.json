@@ -1,0 +1,275 @@
+{
+  "pathologies": {
+    "Atelectasis": {
+      "definition": "Partial or complete collapse of a lung or lung lobe, resulting in reduced gas exchange.",
+      "severity_grades": {
+        "mild": "Subsegmental or linear atelectasis, often incidental",
+        "moderate": "Lobar atelectasis with visible volume loss",
+        "severe": "Complete lung collapse with mediastinal shift"
+      },
+      "follow_up": [
+        "Repeat CXR in 4-6 weeks if incidental finding",
+        "CT chest if persistent or suspicious for endobronchial lesion",
+        "Incentive spirometry and chest physiotherapy for post-operative cases"
+      ],
+      "urgency": "routine",
+      "differentials": ["Mucus plugging", "Endobronchial mass", "Post-surgical", "Pleural effusion"],
+      "interactions": {
+        "Effusion": "May be compressive atelectasis secondary to effusion — treat the effusion first",
+        "Mass": "Consider post-obstructive atelectasis — CT with contrast recommended"
+      }
+    },
+    "Cardiomegaly": {
+      "definition": "Enlargement of the cardiac silhouette, cardiothoracic ratio > 0.5 on PA view.",
+      "severity_grades": {
+        "mild": "CTR 0.50–0.55",
+        "moderate": "CTR 0.55–0.65",
+        "severe": "CTR > 0.65"
+      },
+      "follow_up": [
+        "Echocardiography to assess ventricular function",
+        "BNP/NT-proBNP levels",
+        "Cardiology referral if new finding",
+        "Serial CXR to monitor progression"
+      ],
+      "urgency": "urgent",
+      "differentials": ["Dilated cardiomyopathy", "Pericardial effusion", "Valvular disease", "AP projection artifact"],
+      "interactions": {
+        "Effusion": "Cardiomegaly + bilateral effusions strongly suggests congestive heart failure",
+        "Edema": "Cardiomegaly + pulmonary edema = decompensated heart failure — emergent management"
+      }
+    },
+    "Consolidation": {
+      "definition": "Opacification of airspaces with air bronchograms, indicating alveolar filling with fluid, pus, or cells.",
+      "severity_grades": {
+        "mild": "Focal/segmental consolidation",
+        "moderate": "Lobar consolidation",
+        "severe": "Multi-lobar or bilateral consolidation"
+      },
+      "follow_up": [
+        "Clinical correlation — infection vs aspiration vs hemorrhage",
+        "Blood cultures and sputum if infectious etiology suspected",
+        "CT chest if non-resolving after appropriate treatment",
+        "Follow-up CXR in 6-8 weeks to confirm resolution"
+      ],
+      "urgency": "urgent",
+      "differentials": ["Pneumonia", "Aspiration", "Pulmonary hemorrhage", "Organizing pneumonia", "Malignancy"],
+      "interactions": {
+        "Pneumonia": "Consolidation is the radiographic hallmark of pneumonia — treat as pneumonia if clinical picture fits",
+        "Effusion": "Parapneumonic effusion — consider thoracentesis if large"
+      }
+    },
+    "Edema": {
+      "definition": "Pulmonary edema — fluid accumulation in the lung parenchyma, typically from cardiogenic or non-cardiogenic causes.",
+      "severity_grades": {
+        "mild": "Cephalization of vessels, peribronchial cuffing",
+        "moderate": "Bilateral perihilar haziness, Kerley B lines",
+        "severe": "Diffuse bilateral opacities (white-out), air bronchograms"
+      },
+      "follow_up": [
+        "Urgent cardiology assessment",
+        "Diuretics (furosemide) if cardiogenic",
+        "Echocardiography",
+        "Repeat CXR after treatment to assess response",
+        "ICU admission if severe respiratory distress"
+      ],
+      "urgency": "emergent",
+      "differentials": ["Cardiogenic pulmonary edema", "ARDS", "Fluid overload", "Renal failure"],
+      "interactions": {
+        "Cardiomegaly": "Edema + cardiomegaly = cardiogenic pulmonary edema — classic heart failure presentation",
+        "Effusion": "Bilateral effusions + edema strongly cardiogenic"
+      }
+    },
+    "Effusion": {
+      "definition": "Pleural effusion — fluid collection in the pleural space, seen as blunting of costophrenic angles or layering opacity.",
+      "severity_grades": {
+        "mild": "Blunting of costophrenic angle (< 500 mL estimated)",
+        "moderate": "Meniscus sign, partial opacification (500–1500 mL)",
+        "severe": "Near-complete hemithorax opacification (> 1500 mL)"
+      },
+      "follow_up": [
+        "Lateral decubitus film or ultrasound to confirm free-flowing",
+        "Thoracentesis if moderate-to-large or if etiology unclear",
+        "CT chest with contrast if complex/loculated",
+        "Lab analysis: LDH, protein, cell count (Light's criteria)"
+      ],
+      "urgency": "urgent",
+      "differentials": ["Heart failure (transudate)", "Infection/empyema (exudate)", "Malignancy", "Pulmonary embolism"],
+      "interactions": {
+        "Cardiomegaly": "Bilateral effusions + cardiomegaly = likely CHF",
+        "Consolidation": "Parapneumonic effusion — may need drainage"
+      }
+    },
+    "Emphysema": {
+      "definition": "Destruction of alveolar walls leading to hyperinflation, seen as increased lucency and flattened diaphragms.",
+      "severity_grades": {
+        "mild": "Subtle hyperinflation, > 10 posterior ribs visible",
+        "moderate": "Flattened diaphragms, increased AP diameter",
+        "severe": "Barrel chest, bullae visible, severely flattened diaphragms"
+      },
+      "follow_up": [
+        "Pulmonary function tests (spirometry with bronchodilator)",
+        "High-resolution CT for phenotyping",
+        "Smoking cessation counseling",
+        "Alpha-1 antitrypsin level if young/non-smoker"
+      ],
+      "urgency": "routine",
+      "differentials": ["COPD", "Alpha-1 antitrypsin deficiency", "Aging changes"],
+      "interactions": {
+        "Pneumothorax": "Emphysema is a risk factor for spontaneous pneumothorax — examine carefully"
+      }
+    },
+    "Fibrosis": {
+      "definition": "Pulmonary fibrosis — reticular opacities, volume loss, and architectural distortion indicating chronic scarring.",
+      "severity_grades": {
+        "mild": "Subtle reticular pattern, basilar predominant",
+        "moderate": "Obvious reticular opacities with traction bronchiectasis",
+        "severe": "Honeycombing pattern, significant volume loss"
+      },
+      "follow_up": [
+        "High-resolution CT chest for pattern classification (UIP, NSIP, etc.)",
+        "Pulmonary function tests (FVC, DLCO)",
+        "Rheumatology workup (ANA, RF) to exclude connective tissue disease",
+        "Pulmonology referral for management"
+      ],
+      "urgency": "routine",
+      "differentials": ["Idiopathic pulmonary fibrosis", "Connective tissue disease-related ILD", "Drug-induced", "Asbestosis"],
+      "interactions": {}
+    },
+    "Hernia": {
+      "definition": "Hiatal hernia — herniation of abdominal contents through the diaphragmatic hiatus, seen as retrocardiac soft tissue density.",
+      "severity_grades": {
+        "mild": "Small sliding hiatal hernia",
+        "moderate": "Large hiatal hernia with visible gastric bubble above diaphragm",
+        "severe": "Paraesophageal hernia with organoaxial volvulus risk"
+      },
+      "follow_up": [
+        "Barium swallow or upper GI series for characterization",
+        "Upper endoscopy if symptomatic (GERD, dysphagia)",
+        "Surgical referral for paraesophageal hernias",
+        "CT abdomen if concern for volvulus or incarceration"
+      ],
+      "urgency": "routine",
+      "differentials": ["Hiatal hernia", "Bochdalek hernia", "Morgagni hernia", "Retrocardiac mass"],
+      "interactions": {}
+    },
+    "Infiltration": {
+      "definition": "Non-specific term for ill-defined opacities that may represent infection, inflammation, edema, or hemorrhage.",
+      "severity_grades": {
+        "mild": "Focal, unilateral infiltrate",
+        "moderate": "Multi-focal infiltrates",
+        "severe": "Diffuse bilateral infiltrates"
+      },
+      "follow_up": [
+        "Clinical correlation is essential — fever, cough, dyspnea?",
+        "If infectious: blood cultures, sputum, empiric antibiotics",
+        "CT chest if non-resolving or diagnostic uncertainty",
+        "Follow-up CXR in 4-6 weeks"
+      ],
+      "urgency": "urgent",
+      "differentials": ["Pneumonia", "Pulmonary edema", "Hemorrhage", "Aspiration", "Drug reaction"],
+      "interactions": {
+        "Consolidation": "Dense infiltrate with air bronchograms may represent consolidation/pneumonia",
+        "Edema": "Bilateral perihilar infiltrates may represent pulmonary edema rather than infection"
+      }
+    },
+    "Mass": {
+      "definition": "Pulmonary mass — a rounded opacity > 3 cm. Highly suspicious for malignancy until proven otherwise.",
+      "severity_grades": {
+        "mild": "Solitary nodule 1-3 cm (technically a nodule, not mass)",
+        "moderate": "Solitary mass > 3 cm without invasion",
+        "severe": "Mass with mediastinal invasion, lymphadenopathy, or satellite nodules"
+      },
+      "follow_up": [
+        "CT chest with contrast — URGENT",
+        "PET-CT for staging if mass confirmed",
+        "Tissue biopsy (CT-guided or bronchoscopic)",
+        "Oncology and thoracic surgery referral",
+        "Comparison with prior imaging if available"
+      ],
+      "urgency": "urgent",
+      "differentials": ["Primary lung cancer", "Metastatic disease", "Hamartoma", "Lung abscess", "Granuloma"],
+      "interactions": {
+        "Atelectasis": "Post-obstructive atelectasis distal to mass — suggests endobronchial component",
+        "Effusion": "Mass + effusion raises concern for malignant pleural effusion — stage IV"
+      }
+    },
+    "Nodule": {
+      "definition": "Pulmonary nodule — a rounded opacity <= 3 cm. May be benign or malignant; follow-up depends on size and risk factors.",
+      "severity_grades": {
+        "mild": "< 6 mm — likely benign, follow Fleischner criteria",
+        "moderate": "6-8 mm — short-term follow-up CT recommended",
+        "severe": "> 8 mm — consider PET-CT or biopsy"
+      },
+      "follow_up": [
+        "Follow Fleischner Society guidelines based on size and risk",
+        "CT chest for characterization (margins, calcification, enhancement)",
+        "Compare with prior imaging to assess growth",
+        "PET-CT if > 8 mm and intermediate/high risk"
+      ],
+      "urgency": "routine",
+      "differentials": ["Granuloma", "Primary lung cancer", "Metastasis", "Hamartoma", "Carcinoid"],
+      "interactions": {}
+    },
+    "Pleural_Thickening": {
+      "definition": "Thickening of the pleural lining, seen as a band of soft tissue density along the chest wall.",
+      "severity_grades": {
+        "mild": "Focal apical pleural thickening",
+        "moderate": "Diffuse unilateral thickening",
+        "severe": "Circumferential thickening (trapped lung) or calcified plaques"
+      },
+      "follow_up": [
+        "CT chest for detailed assessment",
+        "Occupational history (asbestos exposure)",
+        "PFTs if restrictive symptoms",
+        "Biopsy if nodular thickening (rule out mesothelioma)"
+      ],
+      "urgency": "routine",
+      "differentials": ["Post-inflammatory (prior infection/empyema)", "Asbestos exposure", "Mesothelioma", "Fibrothorax"],
+      "interactions": {
+        "Effusion": "Thickening + persistent effusion — rule out malignant mesothelioma"
+      }
+    },
+    "Pneumonia": {
+      "definition": "Infection of the lung parenchyma, seen as focal or diffuse opacities with clinical signs of infection.",
+      "severity_grades": {
+        "mild": "Focal opacity, single lobe, hemodynamically stable",
+        "moderate": "Multi-lobar involvement",
+        "severe": "Bilateral diffuse opacities, sepsis, respiratory failure"
+      },
+      "follow_up": [
+        "CURB-65 or PSI score for severity assessment",
+        "Blood cultures x2, sputum culture, procalcitonin",
+        "Empiric antibiotics per local guidelines",
+        "Supplemental oxygen if SpO2 < 94%",
+        "Follow-up CXR at 6-8 weeks to confirm resolution",
+        "CT if non-resolving to exclude underlying malignancy"
+      ],
+      "urgency": "urgent",
+      "differentials": ["Bacterial pneumonia", "Viral pneumonia", "Aspiration pneumonia", "Fungal infection", "TB"],
+      "interactions": {
+        "Effusion": "Parapneumonic effusion — thoracentesis if large; rule out empyema",
+        "Consolidation": "Consolidation is the typical radiographic appearance of pneumonia"
+      }
+    },
+    "Pneumothorax": {
+      "definition": "Air in the pleural space causing lung collapse. Seen as a visceral pleural line with absent lung markings peripherally.",
+      "severity_grades": {
+        "mild": "Small apical pneumothorax < 2 cm at apex",
+        "moderate": "2-3 cm or > 50% lung collapse",
+        "severe": "Tension pneumothorax — mediastinal shift, hemodynamic compromise"
+      },
+      "follow_up": [
+        "Small + stable: observation, serial CXR q6h, high-flow O2",
+        "Moderate: aspiration or small-bore chest drain",
+        "Tension: IMMEDIATE needle decompression (2nd ICS MCL) then chest tube",
+        "CT if recurrent or underlying lung disease suspected"
+      ],
+      "urgency": "emergent",
+      "differentials": ["Primary spontaneous", "Secondary (COPD/emphysema)", "Traumatic", "Iatrogenic"],
+      "interactions": {
+        "Emphysema": "Secondary pneumothorax in emphysema — higher recurrence risk, consider pleurodesis"
+      }
+    }
+  }
+}
