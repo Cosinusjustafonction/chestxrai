@@ -285,6 +285,16 @@ function PaperDocument({ patient }) {
         </ul>
       </PaperSection>
 
+      {/* AI Narrative from crew */}
+      {patient.report && (
+        <PaperSection title="AI Narrative Report">
+          <p style={{ fontSize: 10.5, color: '#6b7280', marginBottom: 8, fontStyle: 'italic' }}>
+            Raw narrative synthesised by the multi-agent crew (Radiologist → VLM Review → Clinical Advisor → Report Generator).
+          </p>
+          <pre className="paper-narrative">{patient.report}</pre>
+        </PaperSection>
+      )}
+
       {/* Review result */}
       {review && (
         <PaperSection title="Physician Review">

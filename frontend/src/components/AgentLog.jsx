@@ -160,18 +160,21 @@ function SystemPre({ entries }) {
 }
 
 /* ── Main component ──────────────────────────────────────── */
-export default function AgentLog({ logs }) {
-  const feedRef   = useRef(null)
-  const bottomRef = useRef(null)
+export default function AgentLog({ logs, onOpenLogs }) {
+  const feedRef      = useRef(null)
+  const atBottomRef  = useRef(true)
   const { pre, sessions } = useMemo(() => parseSessions(logs), [logs])
 
-  /* Only auto-scroll when user is already near the bottom */
-  useEffect(() => {
+  const handleScroll = () => {
     const el = feedRef.current
     if (!el) return
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 140
-    if (nearBottom) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
+
+  /* Auto-scroll only when user hasn't manually scrolled away */
+  useEffect(() => {
+    if (atBottomRef.current && feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight
     }
   }, [sessions.length, sessions.at(-1)?.entries.length])
 
@@ -179,15 +182,18 @@ export default function AgentLog({ logs }) {
     <aside className="agent-log">
       <div className="log-header">
         <span className="log-title">Agent Reasoning</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 10, color: '#1e3a2a', fontFamily: 'var(--font-mono)' }}>
             {sessions.length} scan{sessions.length !== 1 ? 's' : ''}
           </span>
+          <button className="al-logs-btn" onClick={onOpenLogs} title="Open full run logs">
+            Logs ↗
+          </button>
           <div className="log-dot" />
         </div>
       </div>
 
-      <div className="al-feed" ref={feedRef}>
+      <div className="al-feed" ref={feedRef} onScroll={handleScroll}>
         <SystemPre entries={pre} />
 
         {sessions.length === 0 && pre.length === 0 && (
@@ -205,7 +211,6 @@ export default function AgentLog({ logs }) {
           />
         ))}
 
-        <div ref={bottomRef} />
       </div>
     </aside>
   )

@@ -2,8 +2,8 @@
 VLM Review Tool — multimodal visual inspection of chest X-rays and Grad-CAM heatmaps.
 
 Provider is chosen via environment variables (see llm_config.py):
-  VLM_PROVIDER = ollama | openai | anthropic   (default: ollama)
-  VLM_MODEL    = llava:7b | gpt-4o | claude-haiku-4-5-20251001  (default: llava:7b)
+  VLM_PROVIDER = ollama | openai | anthropic | gemini   (default: ollama)
+  VLM_MODEL    = llava:7b | gpt-4o | claude-haiku-4-5-20251001 | gemini-2.5-flash  (default: llava:7b)
 """
 
 import os
@@ -65,8 +65,12 @@ class VLMReviewTool(BaseTool):
             return _call_openai(model, image_paths)
         if provider == "anthropic":
             return _call_anthropic(model, image_paths)
+        if provider == "gemini":
+            return _call_gemini(model, image_paths)
+        if provider == "openrouter":
+            return _call_openrouter(model, image_paths)
 
-        return f"[VLMReviewTool] Unknown VLM_PROVIDER '{provider}'. Use: ollama, openai, anthropic."
+        return f"[VLMReviewTool] Unknown VLM_PROVIDER '{provider}'. Use: ollama, openai, anthropic, gemini, openrouter."
 
 
 # ── Provider implementations ───────────────────────────────────
@@ -145,6 +149,64 @@ def _call_anthropic(model: str, image_paths: list[str]) -> str:
         return "[VLMReviewTool] 'anthropic' package not installed. Run: pip install anthropic"
     except Exception as e:
         return f"[VLMReviewTool] Anthropic error: {e}"
+
+
+def _call_openrouter(model: str, image_paths: list[str]) -> str:
+    api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return "[VLMReviewTool] OPENROUTER_API_KEY (or OPENAI_API_KEY) not set."
+
+    content = []
+    for i, p in enumerate(image_paths):
+        label = "Original chest X-ray" if i == 0 else f"Grad-CAM overlay {i}"
+        ext   = _ext(p)
+        content.append({"type": "image_url", "image_url": {"url": f"data:{ext};base64,{_b64(p)}"}})
+        content.append({"type": "text", "text": label})
+    content.append({"type": "text", "text": _PROMPT})
+
+    try:
+        import openai
+        client   = openai.OpenAI(api_key=api_key, base_url="https://openrouter.ai/api/v1")
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": content}],
+            max_tokens=600,
+        )
+        return response.choices[0].message.content
+    except ImportError:
+        return "[VLMReviewTool] 'openai' package not installed. Run: pip install openai"
+    except Exception as e:
+        return f"[VLMReviewTool] OpenRouter error: {e}"
+
+
+def _call_gemini(model: str, image_paths: list[str]) -> str:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return "[VLMReviewTool] GEMINI_API_KEY not set."
+
+    try:
+        import google.generativeai as genai
+        from PIL import Image
+
+        genai.configure(api_key=api_key)
+        model_obj = genai.GenerativeModel(model)
+
+        parts = []
+        for i, p in enumerate(image_paths):
+            label = "Original chest X-ray" if i == 0 else f"Grad-CAM overlay {i}"
+            parts.append(label)
+            parts.append(Image.open(p))
+        parts.append(_PROMPT)
+
+        response = model_obj.generate_content(parts)
+        return response.text
+    except ImportError:
+        return (
+            "[VLMReviewTool] 'google-generativeai' package not installed. "
+            "Run: pip install google-generativeai"
+        )
+    except Exception as e:
+        return f"[VLMReviewTool] Gemini error: {e}"
 
 
 # ── Helpers ────────────────────────────────────────────────────

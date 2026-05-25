@@ -1,6 +1,7 @@
 import uuid
 import sys
 import asyncio
+import queue as _std_queue
 from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import FastAPI, UploadFile, WebSocket
@@ -8,6 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from collections import OrderedDict
 import os
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 # Resolve paths relative to this file so uvicorn can be launched from any cwd
 _API_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -39,9 +43,18 @@ async def process_queue():
         patient_id = await queue.get()
         patient = patients[patient_id]
         patient["status"] = "analyzing"
+        patient.setdefault("run_log", [])
 
-        await broadcast_log(f"[Queue] ▶ Dispatching patient {patient_id}: {patient['filename']}")
-        await broadcast_log(f"[Queue] Pipeline: Radiologist → Clinical Advisor → Report")
+        # Helper: broadcast to WebSocket AND record in this patient's run_log
+        async def record(msg: str):
+            patient["run_log"].append({
+                "time": datetime.now().strftime("%H:%M:%S"),
+                "text": msg,
+            })
+            await broadcast_log(msg)
+
+        await record(f"[Queue] ▶ Dispatching patient {patient_id}: {patient['filename']}")
+        await record(f"[Queue] Pipeline: Radiologist → VLM Review → Clinical Advisor → Report")
 
         try:
             from tools.triage_tool import analyze_xray
@@ -49,9 +62,9 @@ async def process_queue():
             from crew import ChestXRAICrew
 
             # ── Radiologist — structured inference ────────────────
-            await broadcast_log(f"[Radiologist] Received scan: {patient['filename']}")
-            await broadcast_log(f"[Radiologist] Loading DenseNet121 (NIH ChestX-ray14, 112K images)...")
-            await broadcast_log(f"[Radiologist] Running multi-label inference across 14 pathology classes...")
+            await record(f"[Radiologist] Received scan: {patient['filename']}")
+            await record(f"[Radiologist] Loading DenseNet121 (NIH ChestX-ray14, 112K images)...")
+            await record(f"[Radiologist] Running multi-label inference across 14 pathology classes...")
 
             loop   = asyncio.get_event_loop()
             result = await loop.run_in_executor(None, analyze_xray, patient["filepath"])
@@ -62,14 +75,14 @@ async def process_queue():
 
             for name, prob in sorted(all_preds.items(), key=lambda x: -x[1]):
                 if prob > 0.30:
-                    await broadcast_log(f"[Radiologist] ✦ {name}: {prob:.1%} — DETECTED (≥30%)")
+                    await record(f"[Radiologist] ✦ {name}: {prob:.1%} — DETECTED (≥30%)")
                 elif prob > 0.15:
-                    await broadcast_log(f"[Radiologist] ◦ {name}: {prob:.1%} — borderline (15–30%)")
+                    await record(f"[Radiologist] ◦ {name}: {prob:.1%} — borderline (15–30%)")
 
             if not detected and not borderline:
-                await broadcast_log(f"[Radiologist] No pathologies above detection threshold — scan appears clear")
+                await record(f"[Radiologist] No pathologies above detection threshold — scan appears clear")
 
-            await broadcast_log(
+            await record(
                 f"[Radiologist] Assessment: severity={result['severity']} | "
                 f"primary={result['top_finding']} ({result['top_finding_confidence']:.1%})"
             )
@@ -78,20 +91,20 @@ async def process_queue():
 
             # ── Clinical Advisor — guideline lookup ───────────────
             if detected:
-                await broadcast_log(
+                await record(
                     f"[Clinical Advisor] {len(detected)} patholog{'y' if len(detected)==1 else 'ies'} "
                     f"flagged — querying clinical guideline database..."
                 )
             else:
-                await broadcast_log(f"[Clinical Advisor] No detected pathologies — skipping guideline lookup")
+                await record(f"[Clinical Advisor] No detected pathologies — skipping guideline lookup")
 
             guidelines = []
             for p in detected:
-                await broadcast_log(f"[Clinical Advisor] Querying: {p['pathology']}...")
+                await record(f"[Clinical Advisor] Querying: {p['pathology']}...")
                 g = lookup_guideline(p["pathology"])
                 guidelines.append(g)
                 if g.get("found"):
-                    await broadcast_log(
+                    await record(
                         f"[Clinical Advisor] {p['pathology']}: urgency={g.get('urgency','?').upper()} | "
                         f"{len(g.get('follow_up', []))} follow-up protocol(s)"
                     )
@@ -99,27 +112,56 @@ async def process_queue():
             patient["guidelines"] = guidelines
 
             # ── Crew — orchestrated pipeline (hierarchical) ────────
-            await broadcast_log(f"[Orchestrator] Qwen2.5-14B orchestrator online — delegating to specialist agents...")
-            await broadcast_log(f"[VLM Review] Dispatching scan to LLaVA vision model...")
-            await broadcast_log(f"[Report Generator] Standing by to synthesize findings...")
+            import crew as _crew_module
 
-            crew_obj    = ChestXRAICrew().crew()
-            crew_result = await loop.run_in_executor(
-                None,
-                lambda: crew_obj.kickoff(inputs={"image_path": patient["filepath"]}),
-            )
-            patient["report"] = crew_result.raw
+            _manager = f"{os.getenv('MANAGER_LLM_PROVIDER','ollama')}:{os.getenv('MANAGER_LLM_MODEL','qwen2.5:14b')}"
+            await record(f"[Orchestrator] {_manager} online — starting hierarchical pipeline...")
+
+            crew_log_q = _std_queue.SimpleQueue()
+            _crew_module._active_log_q = crew_log_q
+
+            # Drain crew step-callback messages → WebSocket + run_log
+            async def _drain():
+                while True:
+                    while True:
+                        try:
+                            await record(crew_log_q.get_nowait())
+                        except _std_queue.Empty:
+                            break
+                    await asyncio.sleep(0.1)
+
+            drain_task = asyncio.create_task(_drain())
+            try:
+                crew_obj    = ChestXRAICrew().crew()
+                crew_result = await loop.run_in_executor(
+                    None,
+                    lambda: crew_obj.kickoff(inputs={"image_path": patient["filepath"]}),
+                )
+                patient["report"] = crew_result.raw
+            finally:
+                _crew_module._active_log_q = None
+                await asyncio.sleep(0.3)
+                drain_task.cancel()
+                try:
+                    await drain_task
+                except asyncio.CancelledError:
+                    pass
+                while True:
+                    try:
+                        await record(crew_log_q.get_nowait())
+                    except _std_queue.Empty:
+                        break
 
             severity_order = {"CRITICAL": 0, "ABNORMAL": 1, "NORMAL": 2}
             patient["sort_key"] = severity_order.get(result["severity"], 2)
             patient["status"]   = "awaiting_review"
 
-            await broadcast_log(f"[Report] ✓ Report ready — dispatched to physician review queue")
+            await record(f"[Report] ✓ Report ready — dispatched to physician review queue")
 
         except Exception as e:
             patient["status"] = "error"
             patient["error"]  = str(e)
-            await broadcast_log(f"[Error] Processing failed for {patient['filename']}: {e}")
+            await record(f"[Error] Processing failed for {patient['filename']}: {e}")
 
         queue.task_done()
 
@@ -166,20 +208,25 @@ async def upload_xray(file: UploadFile):
         "guidelines": None,
         "report": None,
         "sort_key": 2,
+        "run_log": [],
     }
 
-    await queue.put(patient_id)
     await broadcast_log(f"[Queue] New patient {patient_id}: {file.filename}")
 
+    await queue.put(patient_id)
     return {"patient_id": patient_id, "status": "queued"}
 
 
 @app.get("/queue")
 async def get_queue():
+    # Exclude run_log from queue listing to keep the response lightweight
     sorted_patients = sorted(
         patients.values(), key=lambda p: (p["sort_key"], p["timestamp"])
     )
-    return sorted_patients
+    return [
+        {k: v for k, v in p.items() if k != "run_log"}
+        for p in sorted_patients
+    ]
 
 
 @app.get("/patient/{patient_id}")

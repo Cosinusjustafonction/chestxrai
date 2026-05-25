@@ -4,19 +4,21 @@ Central LLM configuration.
 Set these environment variables (or add them to a .env file) to switch providers
 without touching any code:
 
-  AGENT_LLM_PROVIDER   = ollama | openai | anthropic | groq   (default: ollama)
-  AGENT_LLM_MODEL      = mistral:7b | gpt-4o-mini | ...       (default: mistral:7b)
+  AGENT_LLM_PROVIDER   = ollama | openai | anthropic | groq | gemini  (default: ollama)
+  AGENT_LLM_MODEL      = mistral:7b | gpt-4o-mini | gemini-2.5-flash  (default: mistral:7b)
 
-  MANAGER_LLM_PROVIDER = ollama | openai | anthropic | groq   (default: ollama)
-  MANAGER_LLM_MODEL    = qwen2.5:14b | gpt-4o | ...           (default: qwen2.5:14b)
+  MANAGER_LLM_PROVIDER = ollama | openai | anthropic | groq | gemini  (default: ollama)
+  MANAGER_LLM_MODEL    = qwen2.5:14b | gpt-4o | gemini-2.5-pro        (default: qwen2.5:14b)
 
-  VLM_PROVIDER         = ollama | openai | anthropic           (default: ollama)
-  VLM_MODEL            = llava:7b | gpt-4o | claude-haiku-... (default: llava:7b)
+  VLM_PROVIDER         = ollama | openai | anthropic | gemini          (default: ollama)
+  VLM_MODEL            = llava:7b | gpt-4o | gemini-2.5-flash          (default: llava:7b)
 
-  OLLAMA_BASE_URL      = http://localhost:11434                (default)
+  OLLAMA_BASE_URL      = http://localhost:11434                        (default)
   OPENAI_API_KEY       = sk-...
   ANTHROPIC_API_KEY    = sk-ant-...
   GROQ_API_KEY         = gsk_...
+  GEMINI_API_KEY       = AIza...
+  OPENROUTER_API_KEY   = sk-or-v1-...  (also accepts OPENAI_API_KEY as fallback)
 """
 
 import os
@@ -35,6 +37,8 @@ def build_llm(provider: str | None = None, model: str | None = None, **kwargs) -
       openai      — OpenAI API
       anthropic   — Anthropic API
       groq        — Groq API (OpenAI-compatible, very fast)
+      gemini      — Google Gemini API
+      openrouter  — OpenRouter (access any model via one API key)
     """
     provider = (provider or "ollama").lower().strip()
     model    = model or "mistral:7b"
@@ -60,9 +64,21 @@ def build_llm(provider: str | None = None, model: str | None = None, **kwargs) -
             raise EnvironmentError("GROQ_API_KEY is not set")
         return LLM(model=f"groq/{model}", api_key=key, **kwargs)
 
+    if provider == "gemini":
+        key = os.getenv("GEMINI_API_KEY")
+        if not key:
+            raise EnvironmentError("GEMINI_API_KEY is not set")
+        return LLM(model=f"gemini/{model}", api_key=key, **kwargs)
+
+    if provider == "openrouter":
+        key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if not key:
+            raise EnvironmentError("OPENROUTER_API_KEY (or OPENAI_API_KEY) is not set")
+        return LLM(model=f"openrouter/{model}", api_key=key, **kwargs)
+
     raise ValueError(
         f"Unknown LLM provider '{provider}'. "
-        "Supported: ollama, openai, anthropic, groq"
+        "Supported: ollama, openai, anthropic, groq, gemini, openrouter"
     )
 
 

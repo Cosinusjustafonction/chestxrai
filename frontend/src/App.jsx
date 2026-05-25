@@ -6,6 +6,7 @@ import PatientQueue      from './components/PatientQueue.jsx'
 import XRayViewer        from './components/XRayViewer.jsx'
 import TriageReport      from './components/TriageReport.jsx'
 import AgentLog          from './components/AgentLog.jsx'
+import RunLogs           from './components/RunLogs.jsx'
 
 export default function App() {
   const {
@@ -18,6 +19,7 @@ export default function App() {
 
   const [isUploading, setIsUploading] = useState(false)
   const [reviewNotes, setReviewNotes] = useState('')
+  const [showLogs, setShowLogs]       = useState(false)
 
   const handleUpload = async (file) => {
     setIsUploading(true)
@@ -59,8 +61,12 @@ export default function App() {
           <TriageReport patient={selectedPatient} />
         </div>
 
-        <AgentLog logs={logs} />
+        <AgentLog logs={logs} onOpenLogs={() => setShowLogs(true)} />
       </div>
+
+      {showLogs && (
+        <RunLogs patients={patients} onClose={() => setShowLogs(false)} />
+      )}
     </div>
   )
 }
