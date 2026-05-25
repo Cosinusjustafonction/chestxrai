@@ -607,7 +607,7 @@ html, body, #root {
 }
 @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:.15} }
 
-/* ─── Agent Log — per-patient sessions ────────────────────── */
+/* ─── Agent Log — feed ─────────────────────────────────────── */
 .al-feed {
   flex: 1;
   overflow-y: auto;
@@ -615,67 +615,14 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Ensure the element itself is scrollable, not just a child */
+  min-height: 0;
 }
-.al-feed::-webkit-scrollbar { width: 3px; }
-.al-feed::-webkit-scrollbar-thumb { background: rgba(0,200,100,.12); border-radius: 2px; }
+.al-feed::-webkit-scrollbar { width: 4px; }
+.al-feed::-webkit-scrollbar-track { background: transparent; }
+.al-feed::-webkit-scrollbar-thumb { background: rgba(0,200,100,.18); border-radius: 2px; }
 
-/* One agent reasoning block */
-.al-group {
-  border-left: 2px solid var(--ac, #475569);
-  padding-left: 10px;
-  margin-bottom: 8px;
-}
-
-.al-group-head {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 3px;
-}
-
-/* .al-agent-dot renamed to .al-dot — defined below with session styles */
-
-.al-agent-name {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ac, #475569);
-}
-
-.al-agent-time {
-  font-size: 9px;
-  font-family: var(--font-mono);
-  color: #1e3a2a;
-  margin-left: auto;
-}
-
-/* Individual log lines inside a group */
-.al-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.al-line {
-  display: flex;
-  align-items: flex-start;
-  gap: 5px;
-  min-height: 18px;
-}
-
-/* .al-tree-char renamed to .al-tree — defined below with session styles */
-
-.al-text {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: #94a3b8;
-  line-height: 1.65;
-  word-break: break-word;
-  flex: 1;
-}
-
-/* Per-patient session card */
+/* ── Per-patient session card ─────────────────────────────── */
 .al-session {
   border: 1px solid rgba(255,255,255,.07);
   border-radius: var(--r);
@@ -689,9 +636,14 @@ html, body, #root {
   gap: 7px;
   padding: 6px 10px;
   background: rgba(255,255,255,.04);
+  border: none;
   border-bottom: 1px solid rgba(255,255,255,.06);
-  flex-wrap: wrap;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s;
 }
+.al-session-header:hover { background: rgba(255,255,255,.07); }
 
 .al-session-num {
   font-size: 9px;
@@ -713,23 +665,138 @@ html, body, #root {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+/* Pipeline-step pip dots on session header */
+.al-session-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.al-pip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 .al-session-id {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: #334155;
-}
-
-.al-session-time {
   font-size: 9px;
   font-family: var(--font-mono);
-  color: #1e3a2a;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.al-chevron {
+  font-size: 10px;
+  color: #334155;
   flex-shrink: 0;
 }
 
 .al-session-body {
-  padding: 8px 10px 4px;
+  padding: 8px 10px 6px;
+}
+
+/* ── Pipeline step block (replaces al-group) ──────────────── */
+.al-step {
+  display: flex;
+  gap: 0;
+  margin-bottom: 6px;
+}
+
+.al-step-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 24px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.al-step-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ac, #475569);
+  color: #04090d;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px #04090d;
+}
+
+.al-step-line {
+  flex: 1;
+  width: 2px;
+  background: rgba(255,255,255,.06);
+  margin-top: 3px;
+}
+
+.al-step-body {
+  flex: 1;
+  padding-left: 8px;
+  min-width: 0;
+}
+
+.al-step-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.al-agent-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ac, #475569);
+}
+
+.al-agent-time {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: #1e3a2a;
+  margin-left: auto;
+}
+
+/* Individual log lines inside a step */
+.al-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.al-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  min-height: 18px;
+}
+
+.al-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.65;
+  word-break: break-word;
+  flex: 1;
+}
+
+.al-tree {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255,255,255,.1);
+  flex-shrink: 0;
+  line-height: 1.65;
+  user-select: none;
+  width: 10px;
 }
 
 /* Pre-session system messages */
@@ -738,10 +805,6 @@ html, body, #root {
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255,255,255,.05);
 }
-
-/* Rename old selectors to match new JSX */
-.al-dot  { width: 7px; height: 7px; border-radius: 50%; background: var(--ac, #475569); flex-shrink: 0; margin-left: -14px; box-shadow: 0 0 0 2px #04090d; }
-.al-tree { font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,.1); flex-shrink: 0; line-height: 1.65; user-select: none; width: 10px; }
 
 /* ─── Loading overlay ──────────────────────────────────────── */
 .load-overlay {

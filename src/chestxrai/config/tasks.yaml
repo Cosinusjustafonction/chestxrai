@@ -27,6 +27,27 @@ analyze_xray:
     gradcam_heatmap_path, and a brief radiologist_note.
   agent: radiologist
 
+vlm_review:
+  description: >
+    Visually inspect the chest X-ray at: {image_path}
+
+    Use the vlm_image_review tool to examine the original X-ray and its Grad-CAM
+    attention heatmaps with a local vision model. The tool automatically finds the
+    corresponding Grad-CAM overlays for the image.
+
+    Based on the visual analysis, report:
+    1. Anatomical findings visible in the image (opacities, effusions, cardiac size, etc.)
+    2. Whether the Grad-CAM activation regions correspond to correct anatomical locations
+    3. Image quality assessment (rotation, exposure, artefacts)
+    4. Your overall visual impression — does the visual evidence support the DenseNet findings?
+  expected_output: >
+    A structured visual radiological interpretation with four labelled sections:
+    ANATOMICAL FINDINGS, GRAD-CAM VALIDATION, IMAGE QUALITY, and VISUAL IMPRESSION.
+    Written in standard radiology terminology, concise and clinically precise.
+  agent: vlm_reviewer
+  context:
+    - analyze_xray
+
 retrieve_guidelines:
   description: >
     Based on the radiologist's findings, retrieve clinical guidelines for each
@@ -55,6 +76,7 @@ retrieve_guidelines:
   agent: clinical_advisor
   context:
     - analyze_xray
+    - vlm_review
 
 generate_report:
   description: >
@@ -101,4 +123,5 @@ generate_report:
   agent: report_generator
   context:
     - analyze_xray
+    - vlm_review
     - retrieve_guidelines

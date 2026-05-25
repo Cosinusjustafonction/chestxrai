@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { WS_BASE } from '../constants.js'
 
 function classify(text) {
-  if (text.includes('[Error]'))           return 't-error'
-  if (text.includes('[Queue]'))           return 't-queue'
-  if (text.includes('[Radiologist]'))     return 't-radiologist'
-  if (text.includes('[Clinical Advisor]'))return 't-advisor'
-  if (text.includes('[Report]'))          return 't-report'
-  if (text.includes('[HITL]'))            return 't-hitl'
-  if (text.includes('[System]'))          return 't-system'
+  if (text.includes('[Error]'))            return 't-error'
+  if (text.includes('[Queue]'))            return 't-queue'
+  if (text.includes('[Orchestrator]'))     return 't-orchestrator'
+  if (text.includes('[Radiologist]'))      return 't-radiologist'
+  if (text.includes('[VLM Review]'))       return 't-vlm'
+  if (text.includes('[Clinical Advisor]')) return 't-advisor'
+  if (text.includes('[Report Generator]')) return 't-report'
+  if (text.includes('[Report]'))           return 't-report'
+  if (text.includes('[HITL]'))             return 't-hitl'
+  if (text.includes('[System]'))           return 't-system'
   return 't-default'
 }
 

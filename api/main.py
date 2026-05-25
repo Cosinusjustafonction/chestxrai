@@ -11,7 +11,7 @@ import os
 
 # Resolve paths relative to this file so uvicorn can be launched from any cwd
 _API_DIR = os.path.dirname(os.path.abspath(__file__))
-_CHESTXRAI_DIR = os.path.join(_API_DIR, "..", "chestxrai", "src", "chestxrai")
+_CHESTXRAI_DIR = os.path.join(_API_DIR, "..", "src", "chestxrai")
 
 # Make the tools package importable
 sys.path.insert(0, os.path.abspath(_CHESTXRAI_DIR))
@@ -46,26 +46,21 @@ async def process_queue():
         try:
             from tools.triage_tool import analyze_xray
             from tools.guideline_tool import lookup_guideline
+            from crew import ChestXRAICrew
 
-            # ── Radiologist ──────────────────────────────────────
+            # ── Radiologist — structured inference ────────────────
             await broadcast_log(f"[Radiologist] Received scan: {patient['filename']}")
             await broadcast_log(f"[Radiologist] Loading DenseNet121 (NIH ChestX-ray14, 112K images)...")
-            await broadcast_log(f"[Radiologist] Preprocessing image → 224×224, normalising RGB channels...")
             await broadcast_log(f"[Radiologist] Running multi-label inference across 14 pathology classes...")
 
-            # Run in executor so the event loop stays unblocked and log messages stream live
             loop   = asyncio.get_event_loop()
             result = await loop.run_in_executor(None, analyze_xray, patient["filepath"])
 
-            await broadcast_log(f"[Radiologist] Inference complete. Evaluating predictions...")
+            detected   = result.get("detected_pathologies", [])
+            borderline = result.get("borderline_pathologies", [])
+            all_preds  = result.get("all_predictions", {})
 
-            all_preds   = result.get("all_predictions", {})
-            detected    = result.get("detected_pathologies", [])
-            borderline  = result.get("borderline_pathologies", [])
-
-            # Log every prediction above borderline threshold
-            sorted_preds = sorted(all_preds.items(), key=lambda x: -x[1])
-            for name, prob in sorted_preds:
+            for name, prob in sorted(all_preds.items(), key=lambda x: -x[1]):
                 if prob > 0.30:
                     await broadcast_log(f"[Radiologist] ✦ {name}: {prob:.1%} — DETECTED (≥30%)")
                 elif prob > 0.15:
@@ -74,18 +69,14 @@ async def process_queue():
             if not detected and not borderline:
                 await broadcast_log(f"[Radiologist] No pathologies above detection threshold — scan appears clear")
 
-            n_hm = len(result.get("gradcam_heatmap_paths", []))
-            await broadcast_log(f"[Radiologist] Grad-CAM: generating heatmaps for top-{n_hm} predictions...")
-            await broadcast_log(f"[Radiologist] Grad-CAM complete — gradient-weighted activation maps saved")
             await broadcast_log(
                 f"[Radiologist] Assessment: severity={result['severity']} | "
                 f"primary={result['top_finding']} ({result['top_finding_confidence']:.1%})"
             )
 
             patient["analysis"] = result
-            patient["status"]   = "awaiting_review"
 
-            # ── Clinical Advisor ─────────────────────────────────
+            # ── Clinical Advisor — guideline lookup ───────────────
             if detected:
                 await broadcast_log(
                     f"[Clinical Advisor] {len(detected)} patholog{'y' if len(detected)==1 else 'ies'} "
@@ -100,31 +91,29 @@ async def process_queue():
                 g = lookup_guideline(p["pathology"])
                 guidelines.append(g)
                 if g.get("found"):
-                    urgency   = g.get("urgency", "unknown").upper()
-                    n_fup     = len(g.get("follow_up", []))
-                    n_diff    = len(g.get("differentials", []))
                     await broadcast_log(
-                        f"[Clinical Advisor] {p['pathology']}: urgency={urgency} | "
-                        f"{n_fup} follow-up protocol(s) | {n_diff} differential(s)"
+                        f"[Clinical Advisor] {p['pathology']}: urgency={g.get('urgency','?').upper()} | "
+                        f"{len(g.get('follow_up', []))} follow-up protocol(s)"
                     )
-                    if g.get("interactions"):
-                        for related, note in list(g["interactions"].items())[:2]:
-                            await broadcast_log(f"[Clinical Advisor]   ↳ Interaction with {related}: {note[:80]}...")
-                else:
-                    await broadcast_log(f"[Clinical Advisor] {p['pathology']}: no guideline entry found")
 
             patient["guidelines"] = guidelines
 
-            # ── Report ───────────────────────────────────────────
+            # ── Crew — orchestrated pipeline (hierarchical) ────────
+            await broadcast_log(f"[Orchestrator] Qwen2.5-14B orchestrator online — delegating to specialist agents...")
+            await broadcast_log(f"[VLM Review] Dispatching scan to LLaVA vision model...")
+            await broadcast_log(f"[Report Generator] Standing by to synthesize findings...")
+
+            crew_obj    = ChestXRAICrew().crew()
+            crew_result = await loop.run_in_executor(
+                None,
+                lambda: crew_obj.kickoff(inputs={"image_path": patient["filepath"]}),
+            )
+            patient["report"] = crew_result.raw
+
             severity_order = {"CRITICAL": 0, "ABNORMAL": 1, "NORMAL": 2}
             patient["sort_key"] = severity_order.get(result["severity"], 2)
+            patient["status"]   = "awaiting_review"
 
-            await broadcast_log(f"[Report] Compiling triage report for patient {patient_id}...")
-            await broadcast_log(
-                f"[Report] Summary: {result['severity']} | "
-                f"{len(detected)} detected | {len(borderline)} borderline | "
-                f"{len(guidelines)} guidelines retrieved"
-            )
             await broadcast_log(f"[Report] ✓ Report ready — dispatched to physician review queue")
 
         except Exception as e:
