@@ -117,11 +117,17 @@ generate_report:
     via the human-in-the-loop checkpoint. Be accurate, concise, and
     clinically actionable.
   expected_output: >
-    A complete, formatted medical triage report following the structure above.
-    The report must be clear enough for an attending physician to make a
-    disposition decision within 60 seconds of reading.
+    A complete medical triage report as plain markdown text following the structure above.
+    Output ONLY the report text — no JSON, no code blocks, no extra commentary.
+    Start directly with "## TRIAGE REPORT".
   agent: report_generator
   context:
     - analyze_xray
     - vlm_review
     - retrieve_guidelines
+  guardrail: >
+    The report MUST contain all of the following sections:
+    "Indication", "Technique", "Findings", "Clinical Context", "Impression", "Recommendations", "Disclaimer".
+    If any section is missing, return the report to the agent for revision.
+    The report must NOT contain fabricated pathology names not present in the radiologist findings.
+    Confidence percentages must match those reported by the DenseNet tool exactly.

@@ -1,6 +1,19 @@
 import { API_BASE } from '../constants.js'
 
 /* ── helpers ──────────────────────────────────────────────── */
+function cleanReport(raw) {
+  if (!raw) return ''
+  // Strip ```json ... ``` or ``` ... ``` wrappers
+  let s = raw.replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim()
+  // If it's a JSON object, join all string values
+  try {
+    const obj = JSON.parse(s)
+    if (typeof obj === 'object' && obj !== null)
+      s = Object.values(obj).filter(v => typeof v === 'string').join('\n\n')
+  } catch { /* not JSON, use as-is */ }
+  return s
+}
+
 function fmt(prob) { return (prob * 100).toFixed(1) + '%' }
 function cls(prob) { return prob > 0.30 ? 'hi' : 'mid' }
 
@@ -289,9 +302,9 @@ function PaperDocument({ patient }) {
       {patient.report && (
         <PaperSection title="AI Narrative Report">
           <p style={{ fontSize: 10.5, color: '#6b7280', marginBottom: 8, fontStyle: 'italic' }}>
-            Raw narrative synthesised by the multi-agent crew (Radiologist → VLM Review → Clinical Advisor → Report Generator).
+            Narrative synthesised by the multi-agent crew (Radiologist → VLM Review → Clinical Advisor → Report Generator).
           </p>
-          <pre className="paper-narrative">{patient.report}</pre>
+          <pre className="paper-narrative">{cleanReport(patient.report)}</pre>
         </PaperSection>
       )}
 

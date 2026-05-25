@@ -2,6 +2,9 @@ import uuid
 import sys
 import asyncio
 import queue as _std_queue
+import json
+import re
+import io
 from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import FastAPI, UploadFile, WebSocket
@@ -10,12 +13,28 @@ from fastapi.staticfiles import StaticFiles
 from collections import OrderedDict
 import os
 from dotenv import load_dotenv
+from PIL import Image as PILImage
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 # Resolve paths relative to this file so uvicorn can be launched from any cwd
 _API_DIR = os.path.dirname(os.path.abspath(__file__))
 _CHESTXRAI_DIR = os.path.join(_API_DIR, "..", "src", "chestxrai")
+
+# JSON log file
+_LOG_DIR = os.path.join(_API_DIR, "logs")
+os.makedirs(_LOG_DIR, exist_ok=True)
+_JSON_LOG_PATH = os.path.join(_LOG_DIR, "agent_log.jsonl")
+
+def _write_json_log(message: str) -> None:
+    m = re.match(r"^\[([^\]]+)\]\s*(.*)", message, re.DOTALL)
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "agent": m.group(1) if m else "System",
+        "message": m.group(2).strip() if m else message,
+    }
+    with open(_JSON_LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
 
 # Make the tools package importable
 sys.path.insert(0, os.path.abspath(_CHESTXRAI_DIR))
@@ -26,6 +45,7 @@ queue: asyncio.Queue = asyncio.Queue()
 
 
 async def broadcast_log(message: str):
+    _write_json_log(message)
     dead = []
     for ws in log_connections:
         try:
@@ -192,11 +212,20 @@ app.mount("/gradcam",  StaticFiles(directory=_gradcam_dir),  name="gradcam")
 
 @app.post("/upload")
 async def upload_xray(file: UploadFile):
+    if not file.filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+        return {"error": "Unsupported format. Upload PNG or JPEG only."}
+
+    content = await file.read()
+    try:
+        PILImage.open(io.BytesIO(content)).verify()
+    except Exception:
+        return {"error": "File is not a valid image."}
+
     patient_id = str(uuid.uuid4())[:8]
     filepath = os.path.join(_uploads_dir, f"{patient_id}_{file.filename}")
 
     with open(filepath, "wb") as f:
-        f.write(await file.read())
+        f.write(content)
 
     patients[patient_id] = {
         "id": patient_id,
